@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/jthro/Projects/lisp_interpreter/build",
+  "command": "/usr/bin/c++   -std=gnu++23 -o CMakeFiles/lisp_interpreter.dir/lisp_interpreter.cpp.o -c /home/jthro/Projects/lisp_interpreter/src/lisp_interpreter.cpp",
+  "file": "/home/jthro/Projects/lisp_interpreter/src/lisp_interpreter.cpp",
+  "output": "CMakeFiles/lisp_interpreter.dir/lisp_interpreter.cpp.o"
+}
+]
