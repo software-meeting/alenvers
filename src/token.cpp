@@ -29,6 +29,23 @@ bool is_identifier(char c) {
     }
 }
 
-Token::Token(TokenType type) : m_type{type} {};
+bool is_delimiter(char c) {
+    switch (c) {
+    case ' ':
+    case '|':
+    case '(':
+    case ')':
+    case '"':
+    case ';':
+    case EOF:
+        return true;
+    default:
+        return false;
+    }
+}
+
+Token::Token(TokenType type) : m_type{type}, m_lexeme{""} {};
+
+Token::Token(TokenType type, std::string lexeme) : m_type{type}, m_lexeme{std::move(lexeme)} {};
 
 }; // namespace token

@@ -2,12 +2,9 @@
 #define SCANNER_HPP
 
 #include <expected>
-#include <stack>
+#include <fstream>
 #include <string_view>
-#include <vector>
 
-#include "fileptr.hpp"
-#include "token.hpp"
 
 namespace scanner {
     class Scanner {
@@ -15,13 +12,9 @@ namespace scanner {
 	static std::expected<Scanner, std::string> create(std::string_view path);
 	void print_file();
 
-        std::expected<std::vector<token::Token>, std::string> scan();
-
       private:
-	fileptr::FilePtr m_src;
-	std::stack<char> m_paren_stack;
-
-	explicit Scanner(fileptr::FilePtr src);
+	std::ifstream m_src;
+	explicit Scanner(std::ifstream&& src);
     };
 }
 

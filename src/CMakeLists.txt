@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 
 project(lisp_interpreter)
-add_executable(lisp_interpreter lisp_interpreter.cpp scanner.cpp fileptr.cpp)
+add_executable(lisp_interpreter lisp_interpreter.cpp scanner.cpp )
 
 # GoogleTest
 include(FetchContent)
