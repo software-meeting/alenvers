@@ -8,9 +8,11 @@
 #include <string_view>
 #include <utility>
 
+#include "sad.hpp"
+
 namespace scanner {
 
-Scanner::Scanner(std::ifstream&& src) : m_src{std::move(src)} {};
+Scanner::Scanner(std::basic_ifstream<char32_t>&& src) : m_src{std::move(src)} {};
 
 // Check for:
 // Braces
@@ -19,7 +21,7 @@ Scanner::Scanner(std::ifstream&& src) : m_src{std::move(src)} {};
 
 std::expected<Scanner, std::string> Scanner::create(std::string_view path) {
     std::filesystem::path fs_path{path};
-    std::ifstream file{fs_path, std::ios::binary};
+    std::basic_ifstream<char32_t> file{fs_path, std::ios::binary};
     if (!file.is_open())
         return std::unexpected("Failed to open file: " + fs_path.string());
 
@@ -27,9 +29,9 @@ std::expected<Scanner, std::string> Scanner::create(std::string_view path) {
 }
 
 void Scanner::print_file() {
-    std::string contents{std::istreambuf_iterator<char>(m_src), std::istreambuf_iterator<char>{}};
+    std::u32string contents{std::istreambuf_iterator<char32_t>(m_src), std::istreambuf_iterator<char32_t>{}};
 
-    std::print("{}", contents);
+    std::print("{}", sad::conv::utf32_to_utf8.to_bytes(contents));
 }
 
 } // namespace scanner
