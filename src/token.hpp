@@ -14,10 +14,10 @@ enum TokenType { LPAREN, RPAREN, IDENTIFIER};
 
 struct Token {
     TokenType m_type;
-    std::string m_lexeme;
+    std::u32string m_lexeme;
+    int m_line_number;
 
-    Token(TokenType type);
-    Token(TokenType type, std::string m_lexeme);
+    explicit Token(TokenType&& type, std::u32string&& m_lexeme, unsigned int line_number);
 };
 
 } // namespace token

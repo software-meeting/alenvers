@@ -1,5 +1,6 @@
 #include <expected>
 #include <print>
+#include <string_view>
 
 #include "scanner.hpp"
 
@@ -9,5 +10,6 @@ int main() {
 	std::print(stderr, "{}", res.error());
 	return 1;
     }
-    res.value().print_file();
+    std::println("No errors!");
+    return 0;
 }

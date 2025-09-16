@@ -44,8 +44,7 @@ bool is_delimiter(char c) {
     }
 }
 
-Token::Token(TokenType type) : m_type{type}, m_lexeme{""} {};
-
-Token::Token(TokenType type, std::string lexeme) : m_type{type}, m_lexeme{std::move(lexeme)} {};
+Token::Token(TokenType&& type, std::u32string&& lexeme, unsigned int line_number)
+    : m_type{type}, m_lexeme{lexeme}, m_line_number(line_number) {};
 
 }; // namespace token
