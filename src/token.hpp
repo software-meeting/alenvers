@@ -10,14 +10,17 @@ bool is_identifier(char c);
 
 bool is_delimiter(char c);
 
-enum TokenType { LPAREN, RPAREN, IDENTIFIER};
+    enum TokenType { LPAREN, RPAREN, IDENTIFIER, QUOTE};
 
 struct Token {
     TokenType m_type;
-    std::u32string m_lexeme;
-    int m_line_number;
+    std::string m_lexeme;
+    unsigned int m_line_number;
 
-    explicit Token(TokenType&& type, std::u32string&& m_lexeme, unsigned int line_number);
+    void print();
+
+    explicit Token(TokenType&& type, std::string&& m_lexeme, unsigned int line_number);
+    explicit Token(TokenType&& type, char m_lexeme, unsigned int line_number);
 };
 
 } // namespace token

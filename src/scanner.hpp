@@ -15,15 +15,18 @@ class Scanner {
 
     std::expected<std::vector<token::Token>, std::string> scan();
 
+    void print_tokens();    
+
     void print_file();
 
   private:
-    std::basic_ifstream<char32_t> m_src;
+    std::basic_ifstream<char> m_src;
 
-    explicit Scanner(std::basic_ifstream<char32_t>&& src);
+    explicit Scanner(std::basic_ifstream<char>&& src);
 
     std::expected<token::Token, std::string> scan_token();
 };
+
 } // namespace scanner
 
 #endif
