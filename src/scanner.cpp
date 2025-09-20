@@ -7,7 +7,6 @@
 #include <iostream>
 #include <iterator>
 #include <print>
-#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -35,7 +34,7 @@ std::expected<Scanner, std::string> Scanner::create(std::string_view path) {
 
 void Scanner::print_tokens() {
     for (auto t : scan().value()) {
-	t.print();
+	std::println("{}", t);
     }
 }
 
@@ -47,15 +46,15 @@ std::expected<std::vector<token::Token>, std::string> Scanner::scan() {
     int paren{0}; // keep track of parentheses
 
     unsigned int line_number{1};
-    auto src_view = std::views::istream<char>(m_src);
-    for (auto it = src_view.begin(); it != src_view.end();) {
+    std::istreambuf_iterator<char> it{m_src};
+    std::istreambuf_iterator<char> end{};
+    while (it != end) {
         switch (*it) {
         case '\n':
             line_number++;
             it++;
             break;
 
-	    
         case '\'': {
 	    // QUOTE
 	    // TODO: This is disgusting
@@ -65,7 +64,6 @@ std::expected<std::vector<token::Token>, std::string> Scanner::scan() {
                 lexeme += '(';
 		paren++;
                 while (*(++it) != ')') {
-
                     if (*it == '\n') {
                         return std::unexpected(
                             std::format("[Line {}]: Missing closing parenthesis.", line_number));
@@ -79,8 +77,9 @@ std::expected<std::vector<token::Token>, std::string> Scanner::scan() {
                 it++;
                 break;
             }
-            while (!token::is_delimiter(*(++it))) {
+            while (!token::is_delimiter(*it)) {
                 lexeme += *it;
+		it++;
             }
             tokens.push_back(token::Token{token::TokenType::QUOTE, std::move(lexeme), line_number});
             it++;
@@ -107,8 +106,8 @@ std::expected<std::vector<token::Token>, std::string> Scanner::scan() {
 		lexeme += *it;
 		it++;
             }
+	    it++;
 	    tokens.push_back(token::Token{token::TokenType::IDENTIFIER, std::move(lexeme), line_number});
-            it++;
 	    break;            
 	}
         }

@@ -1,0 +1,6 @@
+* Lisp Interpreter
+Toy scheme interpreter based on the Revised^7 Report on the Algorithmic Language Scheme (A. Shinn, J. Cowan, A. Gleckler).
+
+** Implementation Notes (Temporary)
+*** Scanner
+No sum types needed, every token is just (tokentype, lexeme, line).
