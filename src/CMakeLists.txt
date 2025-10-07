@@ -3,12 +3,15 @@ cmake_minimum_required(VERSION 4.1)
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
+set(CMAKE_CXX_CLANG_TIDY
+  clang-tidy;
+  -format-style='.clang-tidy';)
 
 
 # Executable
 project(lisp_interpreter)
 add_compile_options(-Wno-deprecated-declarations)
-add_executable(lisp_interpreter lisp_interpreter.cpp scanner.cpp token.cpp)
+add_executable(lisp_interpreter lisp_interpreter.cpp)
 
 # GoogleTest
 include(FetchContent)

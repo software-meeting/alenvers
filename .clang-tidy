@@ -1,10 +1,7 @@
 Checks: >
-  bugprone-*
-  cert-*
-  clang-analyzer-*
-  cppcoreguidelines-*
-  hicpp-*
-  modernize-*
-  performance-*
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  clang-analyzer-*,
+  modernize-*,
+  performance-*,
   portability-*
-  readability-*

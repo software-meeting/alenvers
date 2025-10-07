@@ -1,55 +1,56 @@
 #ifndef TOKEN_HPP
 #define TOKEN_HPP
 
+#include <cstdint>
 #include <format>
 #include <sstream>
 #include <string>
 
 namespace token {
-/// returns if c is a valid scheme identifier
-/// also returns true if the character is a ., so be careful with lists
-bool is_identifier(char c);
 
-bool is_delimiter(char c);
+enum struct TokenType : uint8_t { LPAREN, RPAREN, IDENTIFIER, END };
 
-enum TokenType { LPAREN, RPAREN, IDENTIFIER, QUOTE };
+struct Token {
+    TokenType m_type{};
+    std::string m_lexeme{};
+    unsigned int m_line_number{};
 
-class Token {
-  public:
-    TokenType m_type;
-    std::string m_lexeme;
-    unsigned int m_line_number;
+    Token() = default;
 
-    explicit Token(TokenType&& type, std::string&& m_lexeme, unsigned int line_number);
-    explicit Token(TokenType&& type, char m_lexeme, unsigned int line_number);
+    explicit Token(TokenType&& type, std::string&& lexeme, unsigned int line_number)
+        : m_type(type), m_lexeme(std::move(lexeme)), m_line_number(line_number) {}
+
+    explicit Token(TokenType&& type, char lexeme, unsigned int line_number)
+        : m_type(type), m_lexeme(std::string{lexeme}), m_line_number(line_number) {}
 };
 
 } // namespace token
 
-template <> struct std::formatter<token::Token, char> {
+template <> struct std::formatter<token::Token> {
     template <class ParseContext> constexpr ParseContext::iterator parse(ParseContext& ctx) {
-        auto it = ctx.begin();
-        return it;
+        return ctx.begin();
     }
 
-    template <class FmtContext> FmtContext::iterator format(token::Token t, FmtContext& ctx) const {
+    template <class FmtContext>
+    auto format(const token::Token& tok, FmtContext& ctx) const -> FmtContext::iterator {
         std::ostringstream out;
-        auto type_string = std::string{};
-        switch (t.m_type) {
-        case token::LPAREN:
-            type_string = "LPAREN";
+        std::string type_str{};
+        switch (tok.m_type) {
+        case token::TokenType::LPAREN:
+            type_str = "LPAREN";
             break;
-        case token::RPAREN:
-            type_string = "RPAREN";
+        case token::TokenType::RPAREN:
+            type_str = "RPAREN";
             break;
-        case token::IDENTIFIER:
-            type_string = "IDENTIFIER";
+        case token::TokenType::IDENTIFIER:
+            type_str = "IDENTIFIER";
             break;
-        case token::QUOTE:
-            type_string = "QUOTE";
+        case token::TokenType::END:
+            type_str = "END";
             break;
         }
-        out << std::format("( token: {}, {} )", std::move(type_string), t.m_lexeme);
+
+        out << std::format("[{}, {}, line: {}]", type_str, tok.m_lexeme, tok.m_line_number);
         return std::ranges::copy(std::move(out).str(), ctx.out()).out;
     }
 };

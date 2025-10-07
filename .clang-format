@@ -1,14 +1,7 @@
 ---
+Language: Cpp
 BasedOnStyle: LLVM
 IndentWidth: 4
-Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 ColumnLimit: 100
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
----
-
