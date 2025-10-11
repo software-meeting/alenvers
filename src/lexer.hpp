@@ -44,19 +44,16 @@ class Lexer {
     class Iterator {
       private:
         r_iter_type m_it{};
-        r_iter_type m_end{};
         Token m_tok{};
 
         /// TODO: Scanner logic
         auto parse_token() -> Token {
             m_it++;
-            if (m_it == m_end)
-                return Token{TokenType::END, '0', 42};
             return Token{TokenType::IDENTIFIER, "Ur mum", 69};
         }
 
       public:
-        Iterator(r_iter_type begin, r_iter_type end) : m_it(begin), m_end(end) {
+        Iterator(r_iter_type begin) : m_it(begin) {
             m_tok = parse_token();
         }
 
@@ -89,18 +86,18 @@ class Lexer {
     explicit Lexer(R src) : m_src(std::move(src)) {}
 
     [[nodiscard]] auto begin() const {
-        return Iterator(std::ranges::begin(m_src), std::ranges::end(m_src));
+        return Iterator(std::begin(m_src));
     }
 
     [[nodiscard]] auto end() const {
-        return Iterator(std::ranges::end(m_src), std::ranges::end(m_src));
+        return std::end(m_src);
     }
 
 };
 
     // TODO: make it model std::range correctly
     // this shit is cooked
-    static_assert(std::ranges::range<Lexer<std::string_view>>);
+    static_assert(std::ranges::range<lexer::Lexer<std::string_view>>);
 
 } // namespace lexer
 

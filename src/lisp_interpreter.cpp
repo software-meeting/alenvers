@@ -1,8 +1,6 @@
 #include "lexer.hpp"
-#include <numeric>
 #include <print>
 #include <string>
-#include <string_view>
 
 auto main() -> int {
     std::string test{"(display \"sussy baka\")"};
