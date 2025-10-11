@@ -53,9 +53,7 @@ class Lexer {
         }
 
       public:
-        Iterator(r_iter_type begin) : m_it(begin) {
-            m_tok = parse_token();
-        }
+        Iterator(r_iter_type begin) : m_it(begin) { m_tok = parse_token(); }
 
         /// === FORWARD_ITERATOR ===
         using difference_type = std::ptrdiff_t;
@@ -85,19 +83,20 @@ class Lexer {
   public:
     explicit Lexer(R src) : m_src(std::move(src)) {}
 
-    [[nodiscard]] auto begin() const {
-        return Iterator(std::begin(m_src));
-    }
+    [[nodiscard]] auto begin() const { return Iterator(std::begin(m_src)); }
 
-    [[nodiscard]] auto end() const {
-        return std::end(m_src);
-    }
-
+    [[nodiscard]] auto end() const { return std::end(m_src); }
 };
 
-    // TODO: make it model std::range correctly
-    // this shit is cooked
-    static_assert(std::ranges::range<lexer::Lexer<std::string_view>>);
+struct LexAdaptor : std::ranges::range_adaptor_closure<LexAdaptor> {
+    auto operator()(std::string_view src) const { return Lexer<std::string_view>{src}; }
+};
+
+constexpr LexAdaptor lex{};
+
+// TODO: make it model std::range correctly
+// this shit is cooked
+static_assert(std::ranges::range<lexer::Lexer<std::string_view>>);
 
 } // namespace lexer
 
