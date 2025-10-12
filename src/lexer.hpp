@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
-#include <cstdio>
 #include <expected>
 #include <filesystem>
 #include <fstream>

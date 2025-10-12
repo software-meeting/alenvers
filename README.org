@@ -1,7 +1,16 @@
-* Lisp Interpreter
-Toy scheme interpreter based on the Revised Report on the Algorithmic Language Scheme (A. Shinn, J. Cowan, A. Gleckler).
+* Alenvers
+Toy Scheme interpreter based on the Revised Report on the Algorithmic Language Scheme (A. Shinn, J. Cowan, A. Gleckler).
 
-** Implementation Notes (Temporary)
-*** Lexer
-No sum types needed, every token is just (tokentype, lexeme, line).
-Entire class is a range adaptor.
+** Goals
+- Should be fully composable with ranges.
+- Extremely modular; should be a matter of one line of code to embed a VM or compile to IR.
+- Invalid state should be caught as early as reasonable
+- From the moment a type of error is recognised, it should be irrepresentable for the rest of the
+  program
+- Design with the intent of parallelising later; adding coroutines should be very plug & play with
+  the exist
+
+*** Long-Term:
+- Collab with various cool people I meet, each person designs a language feature type thing
+- Priority numero uno: fix the abomination that is the type system specified in that paper
+- Also would be cool to add digital circuit backend...
