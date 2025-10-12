@@ -5,13 +5,11 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
-#include <cstdio>
 #include <expected>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <ranges>
-#include <regex>
 #include <string_view>
 #include <utility>
 #include <variant>
@@ -42,29 +40,21 @@ template <std::ranges::range R>
 class Lexer {
   private:
     using r_iter_type = std::ranges::iterator_t<R>;
-    using r_end_type = std::ranges::sentinel_t<R>;
     mutable R m_src;
 
     class Iterator {
       private:
         r_iter_type m_it{};
-        r_end_type m_end{};
-
         Token m_tok{};
 
         /// TODO: Scanner logic
         auto parse_token() -> Token {
-            if (m_it == m_end)
-                return Token{TokenType::END, "amogus", 20};
-            char c = *(++m_it);
+            m_it++;
             return Token{TokenType::IDENTIFIER, "Ur mum", 69};
         }
 
       public:
-        Iterator(r_iter_type begin, r_end_type end)
-            : m_it(std::move(begin)), m_end(std::move(end)) {
-            ++(*this);
-        }
+        Iterator(r_iter_type begin) : m_it(std::move(begin)) { m_tok = parse_token(); }
 
         /// === FORWARD_ITERATOR ===
         using difference_type = std::ptrdiff_t;
@@ -81,22 +71,20 @@ class Lexer {
 
         auto operator++(int) -> Iterator {
             auto old = *this;
-            ++(*this);
+	    this = this++;
             return old;
         }
 
-        auto operator==(std::default_sentinel_t other) const -> bool {
-            return m_tok.m_type == token::TokenType::END;
-        }
+        auto operator==(std::default_sentinel_t other) const -> bool { return m_tok.m_type != token::TokenType::END; }
         /// ==========================
     };
 
     static_assert(std::input_iterator<Iterator>);
 
   public:
-    explicit Lexer(R src) : m_src(src) {}
+   explicit Lexer(R src) : m_src(src) {}
 
-    [[nodiscard]] auto begin() const { return Iterator(std::begin(m_src), std::end(m_src)); }
+    [[nodiscard]] auto begin() const { return Iterator(std::begin(m_src)); }
 
     [[nodiscard]] auto end() const { return std::default_sentinel; }
 };
