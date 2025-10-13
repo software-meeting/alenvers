@@ -12,6 +12,7 @@
 #include <ranges>
 #include <regex>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -93,8 +94,9 @@ class Lexer {
     static_assert(std::input_iterator<Iterator>);
 
   public:
-    explicit Lexer(R src) : m_src(src) {}
-
+    template <typename T> requires std::same_as<std::remove_cvref_t<T>, R>
+    Lexer(T src) : m_src{std::forward<T>(src)} {}
+        
     [[nodiscard]] auto begin() const { return Iterator(std::begin(m_src), std::end(m_src)); }
 
     [[nodiscard]] auto end() const { return std::default_sentinel; }
@@ -107,9 +109,8 @@ struct LexAdaptor : std::ranges::range_adaptor_closure<LexAdaptor<R>> {
 
 template <std::ranges::range R> constexpr LexAdaptor<R> lex{};
 
-// TODO: make it model std::range correctly
-// this shit is cooked
 static_assert(std::ranges::range<lexer::Lexer<std::string_view>>);
+static_assert(std::ranges::range<lexer::Lexer<std::ranges::istream_view<char>>>);
 
 } // namespace lexer
 

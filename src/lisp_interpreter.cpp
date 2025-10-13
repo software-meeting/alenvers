@@ -12,4 +12,5 @@ auto main() -> int {
     std::println("{}", testa | lexer::lex<std::string_view>);
     std::println("{}", testb | lexer::lex<std::ranges::istream_view<char>>);
 
+    std::print("{}", testb);
 }
