@@ -7,6 +7,7 @@
 #include <expected>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <ranges>
 #include <regex>
@@ -47,12 +48,46 @@ class Lexer {
       private:
         r_iter_type m_it{};
         r_end_type m_end{};
+        unsigned int m_line_number{1};
 
         Token m_tok{};
 
+        static auto is_whitespace(const char c) -> bool {
+            return c == ' ' || c == '\t' || c == '\n';
+        }
+
+        // Return substring until c returns true on the current character
+        // Does not consume that character
+        auto consume(const std::function<bool(const char)>& c) -> std::string {
+            std::string res{};
+            while (!c(*m_it) && m_it != m_end) {
+                res += *m_it;
+                ++m_it;
+            }
+            return res;
+        }
+
         auto parse_token() -> Token {
-            char c = *(++m_it);
-            return Token{token::Identifier{.m_line_number = 69, .m_lexeme = "Ur Mum"}};
+            switch (*m_it) {
+            case '\n':
+                m_line_number++;
+            case '\t':
+            case ' ':
+		m_it++;
+                return parse_token();
+                break;
+
+            case '(':
+		m_it++;
+		return token::LParen{m_line_number};
+            case ')':
+		m_it++;
+		return token::RParen{m_line_number};
+
+            default:
+                return token::Identifier{.m_line_number = m_line_number,
+                                         .m_lexeme = consume(is_whitespace)};
+            }
         }
 
       public:
