@@ -10,6 +10,8 @@ template <class... Ts> struct overloads : Ts... {
     using Ts::operator()...;
 };
 
+struct Eof {};
+
 struct Identifier {
     unsigned int m_line_number;
     std::string m_lexeme;
@@ -23,7 +25,7 @@ struct RParen {
     unsigned int m_line_number;
 };
 
-using Token = std::variant<Identifier, LParen, RParen>;
+using Token = std::variant<Eof, Identifier, LParen, RParen>;
 
 } // namespace token
 
@@ -46,13 +48,20 @@ template <> struct std::formatter<token::RParen> : std::formatter<std::string> {
     }
 };
 
+template <> struct std::formatter<token::Eof> : std::formatter<std::string> {
+    auto format(const token::Eof& tok, format_context& ctx) const {
+        return formatter<string>::format("[EOF]", ctx);
+    }
+};
+
+
 namespace token {
 auto print(const Token& token) -> std::string {
     auto visitor = overloads{
+	[](const Eof& token) -> std::string { return std::format("{}", token); },
         [](const Identifier& token) -> std::string { return std::format("{}", token); },
         [](const LParen& token) -> std::string { return std::format("{}", token); },
         [](const RParen& token) -> std::string { return std::format("{}", token); },
-
     };
     return std::visit(visitor, token);
 }

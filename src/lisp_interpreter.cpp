@@ -9,6 +9,8 @@ auto main() -> int {
     auto stream = std::basic_ifstream<char>{std::filesystem::path{"test.txt"}};
     auto testb = std::ranges::istream_view<char>{stream};
 
+    
+
     for (const auto & it : testa | lexer::lex<std::string_view>) {
 	std::println("{}", token::print(it));
     }
