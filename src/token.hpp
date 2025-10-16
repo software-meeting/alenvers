@@ -1,58 +1,60 @@
-#ifndef TOKEN_HPP
-#define TOKEN_HPP
+#pragma once
 
-#include <cstdint>
 #include <format>
-#include <sstream>
 #include <string>
+#include <variant>
 
 namespace token {
 
-enum struct TokenType : uint8_t { LPAREN, RPAREN, IDENTIFIER, END };
-
-struct Token {
-    TokenType m_type{};
-    std::string m_lexeme{};
-    unsigned int m_line_number{};
-
-    Token() = default;
-
-    explicit Token(TokenType&& type, std::string&& lexeme, unsigned int line_number)
-        : m_type(type), m_lexeme(std::move(lexeme)), m_line_number(line_number) {}
-
-    explicit Token(TokenType&& type, char lexeme, unsigned int line_number)
-        : m_type(type), m_lexeme(std::string{lexeme}), m_line_number(line_number) {}
+template <class... Ts> struct overloads : Ts... {
+    using Ts::operator()...;
 };
+
+struct Identifier {
+    unsigned int m_line_number;
+    std::string m_lexeme;
+};
+
+struct LParen {
+    unsigned int m_line_number;
+};
+
+struct RParen {
+    unsigned int m_line_number;
+};
+
+using Token = std::variant<Identifier, LParen, RParen>;
 
 } // namespace token
 
-template <> struct std::formatter<token::Token> {
-    template <class ParseContext> constexpr ParseContext::iterator parse(ParseContext& ctx) {
-        return ctx.begin();
-    }
-
-    template <class FmtContext>
-    auto format(const token::Token& tok, FmtContext& ctx) const -> FmtContext::iterator {
-        std::ostringstream out;
-        std::string type_str{};
-        switch (tok.m_type) {
-        case token::TokenType::LPAREN:
-            type_str = "LPAREN";
-            break;
-        case token::TokenType::RPAREN:
-            type_str = "RPAREN";
-            break;
-        case token::TokenType::IDENTIFIER:
-            type_str = "IDENTIFIER";
-            break;
-        case token::TokenType::END:
-            type_str = "END";
-            break;
-        }
-
-        out << std::format("[{}, {}, line: {}]", type_str, tok.m_lexeme, tok.m_line_number);
-        return std::ranges::copy(std::move(out).str(), ctx.out()).out;
+template <> struct std::formatter<token::Identifier> : std::formatter<std::string> {
+    auto format(const token::Identifier& tok, format_context& ctx) const {
+        return formatter<string>::format(
+            std::format("['{}', line {}]", tok.m_lexeme, tok.m_line_number), ctx);
     }
 };
 
-#endif
+template <> struct std::formatter<token::LParen> : std::formatter<std::string> {
+    auto format(const token::LParen& tok, format_context& ctx) const {
+        return formatter<string>::format(std::format("['(', line {}]", tok.m_line_number), ctx);
+    }
+};
+
+template <> struct std::formatter<token::RParen> : std::formatter<std::string> {
+    auto format(const token::RParen& tok, format_context& ctx) const {
+        return formatter<string>::format(std::format("[')', line {}]", tok.m_line_number), ctx);
+    }
+};
+
+namespace token {
+auto print(const Token& token) -> std::string {
+    auto visitor = overloads{
+        [](const Identifier& token) -> std::string { return std::format("{}", token); },
+        [](const LParen& token) -> std::string { return std::format("{}", token); },
+        [](const RParen& token) -> std::string { return std::format("{}", token); },
+
+    };
+    return std::visit(visitor, token);
+}
+
+}; // namespace token

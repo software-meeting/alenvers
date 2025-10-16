@@ -1,5 +1,4 @@
-#ifndef LEXER_HPP
-#define LEXER_HPP
+#pragma once
 
 #include "token.hpp"
 #include <algorithm>
@@ -23,7 +22,6 @@ struct InvalidPathError {
 
 using LexError = std::variant<InvalidPathError>;
 using Token = token::Token;
-using TokenType = token::TokenType;
 
 auto rdfile(const std::filesystem::path& path) -> std::expected<std::string, InvalidPathError> {
     std::basic_ifstream<char> filestream{path};
@@ -52,12 +50,9 @@ class Lexer {
 
         Token m_tok{};
 
-        /// TODO: Scanner logic
         auto parse_token() -> Token {
-            if (m_it == m_end)
-                return Token{TokenType::END, "amogus", 20};
             char c = *(++m_it);
-            return Token{TokenType::IDENTIFIER, "Ur mum", 69};
+            return Token{token::Identifier{.m_line_number = 69, .m_lexeme = "Ur Mum"}};
         }
 
       public:
@@ -85,18 +80,17 @@ class Lexer {
             return old;
         }
 
-        auto operator==(std::default_sentinel_t other) const -> bool {
-            return m_tok.m_type == token::TokenType::END;
-        }
+        auto operator==(std::default_sentinel_t other) const -> bool { return m_it == m_end; }
         /// ==========================
     };
 
     static_assert(std::input_iterator<Iterator>);
 
   public:
-    template <typename T> requires std::same_as<std::remove_cvref_t<T>, R>
+    template <typename T>
+        requires std::same_as<std::remove_cvref_t<T>, R>
     Lexer(T src) : m_src{std::forward<T>(src)} {}
-        
+
     [[nodiscard]] auto begin() const { return Iterator(std::begin(m_src), std::end(m_src)); }
 
     [[nodiscard]] auto end() const { return std::default_sentinel; }
@@ -113,5 +107,3 @@ static_assert(std::ranges::range<lexer::Lexer<std::string_view>>);
 static_assert(std::ranges::range<lexer::Lexer<std::ranges::istream_view<char>>>);
 
 } // namespace lexer
-
-#endif
