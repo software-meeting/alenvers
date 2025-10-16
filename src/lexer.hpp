@@ -63,7 +63,6 @@ class Lexer {
         auto consume(const std::function<bool(const char)>& c) -> std::string {
             std::string res{};
             while (!c(*m_it) && m_it != m_end) {
-		std::print("{}", *m_it);
                 res += *m_it;
                 ++m_it;
             }
