@@ -4,4 +4,6 @@ Checks: >
   clang-analyzer-*,
   modernize-*,
   performance-*,
-  portability-*
+  portability-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-non-private-member-variables-in-classes

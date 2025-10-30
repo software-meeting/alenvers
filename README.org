@@ -14,3 +14,26 @@ Toy Scheme interpreter based on the Revised Report on the Algorithmic Language S
 - Collab with various cool people I meet, each person designs a language feature type thing
 - Priority numero uno: fix the abomination that is the type system specified in that paper
 - Also would be cool to add digital circuit backend...
+
+* Lexer State Machine
+** Current design bad. Why?
+- nightmare of type declaration order
+- very, very, not functional
+- boilerplate out the wazoo
+- lots of this stems from not being allowed to have shared pointers to a file, which this
+  implementation relies on having an actual pointer to a file
+
+** What is good
+- Struct to encapsulate context is a good idea
+- External transition table + every state is a type good
+
+** How fix
+- State machine has no internal "state", purely functional, just takes events of type `char` and
+  updates its state accordingly.
+- Make the state machien Mealy type. Advantages:
+  - State changes on transitions means we can use functions instead of constructors
+  - Fewer overall states
+- Lex result = (expected ( Optional ( token ), LexError) , newState ) )
+- Handler class holds the state machine instance, simply repeatedly runs the state machine until
+  result = ( Some ( Expected ( Token, LexError ) ), newState )
+- State machine handles its own resynchronisation (probably just after RParen)

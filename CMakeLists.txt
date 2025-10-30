@@ -10,8 +10,9 @@ set(CMAKE_CXX_CLANG_TIDY
 
 # Executable
 project(lisp_interpreter)
+include_directories(include)
 add_compile_options(-Wno-deprecated-declarations)
-add_executable(lisp_interpreter lisp_interpreter.cpp)
+add_executable(lisp_interpreter src/lisp_interpreter.cpp)
 
 # GoogleTest
 include(FetchContent)
@@ -24,7 +25,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(test test.cpp test1.cpp)
+add_executable(test src/test.cpp)
 
 target_link_libraries(
   test
