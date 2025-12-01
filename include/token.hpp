@@ -1,15 +1,17 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <format>
 #include <string>
+#include <type_traits>
 #include <variant>
-
-#include "visitor.hpp"
 
 namespace token {
 
 struct Eof {};
+
+struct should_consume_tag {};
 
 // struct Identifier {
 //     uint_fast32_t line_number;
@@ -60,12 +62,12 @@ struct Eof {};
 //     uint_fast32_t col_number;
 // };
 
-struct LParen {
+struct LParen : should_consume_tag {
     uint_fast32_t line_number;
     uint_fast32_t col_number;
 };
 
-struct RParen {
+struct RParen : should_consume_tag {
     uint_fast32_t line_number;
     uint_fast32_t col_number;
 };
@@ -73,7 +75,15 @@ struct RParen {
 // using Token = std::variant<Eof, Identifier, Plus, Minus, Dot, Quote, Quasiquote, String, True,
 //                           False, LParen, RParen>;
 
-    using Token = std::variant<Eof, LParen, RParen>;
+using Token = std::variant<Eof, LParen, RParen>;
+
+auto should_consume(const Token& tok) -> bool {
+    return std::visit(
+        [](const auto& tok) -> bool {
+            return std::derived_from<std::remove_cvref_t<decltype(tok)>, should_consume_tag>;
+        },
+        tok);
+}
 
 }  // namespace token
 
@@ -152,15 +162,22 @@ struct std::formatter<token::RParen> : std::formatter<std::string> {
     }
 };
 
-namespace token {
-auto print(const Token& token) -> std::string {
-    auto visitor = Visitor{
-        [](const Eof& token) -> std::string { return std::format("{}", token); },
-        // [](const Identifier& token) -> std::string { return std::format("{}", token); },
-        [](const LParen& token) -> std::string { return std::format("{}", token); },
-        [](const RParen& token) -> std::string { return std::format("{}", token); },
-    };
-    return std::visit(visitor, token);
-}
+template <>
+struct std::formatter<token::Token> : std::formatter<std::string> {
+    auto format(const token::Token& tok, format_context& ctx) const {
+        struct Visitor {
+            format_context& ctx;  // NOLINT
+            auto operator()(const token::Eof tok) {
+                return std::formatter<token::Eof>{}.format(tok, ctx);
+            }
+            auto operator()(const token::LParen& tok) {
+                return std::formatter<token::LParen>{}.format(tok, ctx);
+            }
+            auto operator()(const token::RParen& tok) {
+                return std::formatter<token::RParen>{}.format(tok, ctx);
+            }
+        };
 
-};  // namespace token
+        return std::visit(Visitor{ctx}, tok);
+    }
+};

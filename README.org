@@ -5,35 +5,23 @@ Toy Scheme interpreter based on the Revised Report on the Algorithmic Language S
 - Should be fully composable with ranges.
 - Extremely modular; should be a matter of one line of code to embed a VM or compile to IR.
 - Invalid state should be caught as early as reasonable
-- From the moment a type of error is recognised, it should be irrepresentable for the rest of the
-  program
-- Design with the intent of parallelising later; adding coroutines should be very plug & play with
-  the exist
+- Make Invalid States Unrepresentable + DOD as possible
+- Full R7RS implementation
 
-*** Long-Term:
-- Collab with various cool people I meet, each person designs a language feature type thing
-- Priority numero uno: fix the abomination that is the type system specified in that paper
-- Also would be cool to add digital circuit backend...
-
-* Lexer State Machine
-** Current design bad. Why?
-- nightmare of type declaration order
-- very, very, not functional
-- boilerplate out the wazoo
-- lots of this stems from not being allowed to have shared pointers to a file, which this
-  implementation relies on having an actual pointer to a file
-
-** What is good
-- Struct to encapsulate context is a good idea
-- External transition table + every state is a type good
-
-** How fix
-- State machine has no internal "state", purely functional, just takes events of type `char` and
-  updates its state accordingly.
-- Make the state machien Mealy type. Advantages:
-  - State changes on transitions means we can use functions instead of constructors
-  - Fewer overall states
-- Lex result = (expected ( Optional ( token ), LexError) , newState ) )
-- Handler class holds the state machine instance, simply repeatedly runs the state machine until
-  result = ( Some ( Expected ( Token, LexError ) ), newState )
-- State machine handles its own resynchronisation (probably just after RParen)
+* Log
+**  (31/10/25) UPDATE:
+Quite happy with the design currently. Might make the transitions member functions because i do not
+see a benefir to a standalone transition table. Also, I want to somehow make the state machine aware
+of when we are at the end of the file so it can regurgitate whatever it has in its mouth as an identifier or
+something if it hasn't matched anything yet. Possible implementation:
+- If m_it == m_end, send char_eof to the state machine. That way, we don't introduce more coupling,
+  and the state machine can still work with its naive chars-as-events model.
+  
+**  (01/12/25) UPDATE:
+ Finally at a point where I am happy with the structure of the lexer. A few breakthroughts:
+ - storing relevant state in the transition table, basically using it as a stack frame means API boundary
+   very clearly drawn
+ - should_consume_tag: this was a stroke of genius. define certain tokens that mean that the state machine
+   should not advance the file pointer
+ - using a range from an istreambuf_iterator -> istream is too high level an abstraction, i'm only ever
+   getting chars anyways

@@ -1,28 +1,28 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
+#include <cstdlib>
 #include <expected>
 #include <iterator>
 #include <optional>
+#include <print>
 #include <ranges>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <variant>
-#include <print>
 
-#include "token.hpp"
 #include "char_range.hpp"
 #include "lexer_automaton.hpp"
+#include "token.hpp"
 
 namespace lexer {
 struct InvalidPathError {
     std::string filename;
 };
 
-using LexError = std::variant<InvalidPathError>;
-using Token = token::Token;
-
-template <char_range R>
+template <char_range::char_range R>
     requires std::same_as<std::iter_value_t<std::ranges::iterator_t<R>>, char> &&
              std::input_iterator<std::ranges::iterator_t<R>>
 class Lexer {
@@ -35,22 +35,43 @@ class Lexer {
        private:
         r_iter_type m_it{};
         r_end_type m_end{};
+        lexer_automaton::State m_state{};
+        std::string m_current_lexeme{};
+        uint_fast32_t m_line_number{1};
+        uint_fast32_t m_col_number{1};
 
-	token::Token m_tok{};
-	lexer_automaton::LexerAutomaton m_automaton{};
+        token::Token m_tok{};
 
-        auto parse_token() -> Token {
-	    while (m_it != m_end) {
-		m_automaton.process(*m_it);
-		m_it++;
-		std::optional<std::expected<token::Token, lexer_automaton::LexError>> tok{m_automaton.get_token()};
-                if (tok.has_value()) {
-		    if (tok.value().has_value()) return tok.value().value();
-		    std::println("{}",lexer_automaton::print_lex_error(tok.value().error()));
-		}
+        auto parse_token() -> token::Token {
+            while (m_it != m_end) {
+                lexer_automaton::TransitionTable visitor{.current_lexeme_prefix{m_current_lexeme},
+                                                         .event = *m_it,
+                                                         .line_number = m_line_number,
+                                                         .col_number = m_col_number};
+
+                auto result = std::visit(visitor, m_state);
+                if (!result.has_value()) {
+                    std::println("amongus");
+                    std::exit(EXIT_FAILURE);
+                }
+
+                m_state = result.value().state;
+                if (*m_it == '\n') {
+                    m_col_number = 1;
+                    m_line_number++;
+                } else {
+                    m_col_number++;
+                }
+
+                if (result.value().token.has_value()) {
+                    auto tok = result.value().token.value();
+                    if (token::should_consume(tok)) m_it++;  // NOLINT
+                    return tok;
+                }
+
+                m_it++;  // NOLINT
             }
-	    std::println("Error: EOF while lexing.");
-	    return token::Eof{};
+            return token::Eof{};
         }
 
        public:
@@ -61,11 +82,11 @@ class Lexer {
 
         /// === FORWARD_ITERATOR ===
         using difference_type = std::ptrdiff_t;
-        using value_type = Token;
-        using reference = const Token&;
+        using value_type = token::Token;
+        using reference = const token::Token&;
         using iterator_category = std::input_iterator_tag;
 
-        auto operator*() const -> const Token& { return m_tok; }
+        auto operator*() const -> reference { return m_tok; }
 
         auto operator++() -> Iterator& {
             m_tok = parse_token();
@@ -96,15 +117,16 @@ class Lexer {
     [[nodiscard]] auto end() const { return std::default_sentinel; }
 };
 
-template <std::ranges::range R>
+template <char_range::char_range R>
 struct LexAdaptor : std::ranges::range_adaptor_closure<LexAdaptor<R>> {
     auto operator()(R src) const { return Lexer<R>{src}; }
 };
 
-template <std::ranges::range R>
+template <char_range::char_range R>
 constexpr LexAdaptor<R> lex{};
 
 static_assert(std::ranges::range<lexer::Lexer<std::string_view>>);
-static_assert(std::ranges::range<lexer::Lexer<std::ranges::istream_view<char>>>);
+static_assert(char_range::char_range<char_range::CharStreamRange>);
+static_assert(std::ranges::range<lexer::Lexer<char_range::CharStreamRange>>);
 
 }  // namespace lexer
