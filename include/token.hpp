@@ -1,13 +1,42 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <format>
 #include <string>
+#include <string_view>
+#include <type_traits>
 #include <variant>
 
 namespace token {
 
-struct Eof {};
+template <typename T>
+concept BaseToken = requires(T tok) {
+    requires(std::same_as<std::remove_cvref_t<decltype(tok.line_number)>, uint_fast32_t>);
+    requires(std::same_as<std::remove_cvref_t<decltype(tok.col_number)>, uint_fast32_t>);
+};
+
+template <typename T>
+concept HasLexeme = requires(T tok) {
+    requires(std::same_as<std::remove_cvref_t<decltype(tok.lexeme)>, std::string>);
+};
+
+template <typename T>
+    requires BaseToken<T> && HasLexeme<T>
+auto format_tok(const T& tok) -> std::string {
+    return std::format("['{}', line: {}, column: {}]", tok.lexeme, tok.line_number, tok.col_number);
+}
+
+template <typename T>
+    requires BaseToken<T>
+auto format_tok(const T& tok, std::string_view lexeme) -> std::string {
+    return std::format("['{}', line: {}, column: {}]", lexeme, tok.line_number, tok.col_number);
+}
+
+struct Eof {
+    uint_fast32_t line_number;
+    uint_fast32_t col_number;
+};
 
 struct Identifier {
     uint_fast32_t line_number;
@@ -78,15 +107,14 @@ using Token = std::variant<Eof, LParen, RParen, Identifier>;
 template <>
 struct std::formatter<token::Eof> : std::formatter<std::string> {
     auto format(const token::Eof& tok, format_context& ctx) const {
-        return formatter<string>::format("[EOF]", ctx);
+        return formatter<string>::format(token::format_tok(tok, "EOF"), ctx);
     }
 };
 
 template <>
 struct std::formatter<token::Identifier> : std::formatter<std::string> {
     auto format(const token::Identifier& tok, format_context& ctx) const {
-        return formatter<string>::format(
-            std::format("['{}', line {}]", tok.lexeme, tok.line_number), ctx);
+        return formatter<string>::format(token::format_tok(tok), ctx);
     }
 };
 
@@ -139,14 +167,14 @@ struct std::formatter<token::Identifier> : std::formatter<std::string> {
 template <>
 struct std::formatter<token::LParen> : std::formatter<std::string> {
     auto format(const token::LParen& tok, format_context& ctx) const {
-        return formatter<string>::format(std::format("['(', line {}]", tok.line_number), ctx);
+        return formatter<string>::format(token::format_tok(tok, "("), ctx);
     }
 };
 
 template <>
 struct std::formatter<token::RParen> : std::formatter<std::string> {
     auto format(const token::RParen& tok, format_context& ctx) const {
-        return formatter<string>::format(std::format("[')', line {}]", tok.line_number), ctx);
+        return formatter<string>::format(token::format_tok(tok, ")"), ctx);
     }
 };
 

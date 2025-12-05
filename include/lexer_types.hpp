@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <string>
 #include <variant>
@@ -27,7 +28,7 @@ struct ErrorState {};
 using State = std::variant<InitState, IdentifierState, ErrorState>;
 
 struct LexResult {
-    std::optional<token::Token> token;
+    std::optional<std::expected<token::Token, LexError>> token;
     State state;
 };
 
