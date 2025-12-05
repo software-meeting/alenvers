@@ -1,9 +1,10 @@
+// lexer.hpp
+// Range adaptor on any range that yields a char
+
 #pragma once
 
 #include <concepts>
 #include <cstdint>
-#include <cstdlib>
-#include <expected>
 #include <iterator>
 #include <optional>
 #include <print>
@@ -14,14 +15,14 @@
 #include <variant>
 
 #include "char_range.hpp"
-#include "lexer_automaton.hpp"
+#include "lexer_types.hpp"
+#include "match_char.hpp"
 #include "token.hpp"
+#include "util.hpp"
 
 namespace lexer {
-struct InvalidPathError {
-    std::string filename;
-};
 
+// Lexer
 template <char_range::char_range R>
     requires std::same_as<std::iter_value_t<std::ranges::iterator_t<R>>, char> &&
              std::input_iterator<std::ranges::iterator_t<R>>
@@ -35,43 +36,119 @@ class Lexer {
        private:
         r_iter_type m_it{};
         r_end_type m_end{};
-        lexer_automaton::State m_state{};
+        State m_state{};
         std::string m_current_lexeme{};
         uint_fast32_t m_line_number{1};
         uint_fast32_t m_col_number{1};
+        bool m_had_error{false};
+        bool m_potential_crlf{};  // set this flag to true when we parse a CR
 
         token::Token m_tok{};
 
-        auto parse_token() -> token::Token {
-            while (m_it != m_end) {
-                lexer_automaton::TransitionTable visitor{.current_lexeme_prefix{m_current_lexeme},
-                                                         .event = *m_it,
-                                                         .line_number = m_line_number,
-                                                         .col_number = m_col_number};
+        // Advance the state of the Lexer FSM
+        // m_it should be manually incremented when needed
+        // yields Eof when stream has ended
+        auto advance_state() -> LexResult {
+            if (m_it == m_end) return LexResult{.token{token::Eof{}}, .state{InitState{}}};
 
-                auto result = std::visit(visitor, m_state);
-                if (!result.has_value()) {
-                    std::println("amongus");
-                    std::exit(EXIT_FAILURE);
-                }
+            auto event = *m_it;
 
-                m_state = result.value().state;
-                if (*m_it == '\n') {
-                    m_col_number = 1;
-                    m_line_number++;
-                } else {
-                    m_col_number++;
-                }
-
-                if (result.value().token.has_value()) {
-                    auto tok = result.value().token.value();
-                    if (token::should_consume(tok)) m_it++;  // NOLINT
-                    return tok;
-                }
-
-                m_it++;  // NOLINT
+            if (m_potential_crlf && event != '\n') {
+                m_line_number++;
+                m_col_number = 1;
             }
-            return token::Eof{};
+
+            auto result = std::visit(
+                util::overloads{
+                    [this, event](const InitState& state) -> LexResult {
+                        if (std::iswspace(event)) {
+                            m_it++;  // NOLINT
+                            return LexResult{.token{std::nullopt}, .state{InitState{}}};
+                        }
+
+                        if (match_char::is_initial(event)) {
+                            m_it++;  // NOLINT
+                            m_current_lexeme = event;
+                            return LexResult{.token{std::nullopt}, .state{IdentifierState{}}};
+                        }
+
+                        switch (event) {
+                            case '(': {
+                                token::LParen tok{.line_number = m_line_number,
+                                                  .col_number = m_col_number};
+                                m_it++;  // NOLINT
+                                return LexResult{.token{tok}, .state{InitState{}}};
+                            }
+
+                            case ')': {
+                                token::RParen tok{.line_number = m_line_number,
+                                                  .col_number = m_col_number};
+                                m_it++;  // NOLINT
+                                return LexResult{.token{tok}, .state{InitState{}}};
+                            }
+
+                            default:
+                                // enter error state and try to resynchronise
+                                m_it++;  // NOLINT
+                                m_current_lexeme = event;
+                                return LexResult{.token{std::nullopt}, .state{ErrorState{}}};
+                        }
+                    },
+
+                    [this, event](const IdentifierState& state) -> LexResult {
+                        if (match_char::is_subsequent(event)) {
+                            m_it++;  // NOLINT
+                            m_current_lexeme += event;
+                            return LexResult{.token{std::nullopt}, .state{IdentifierState{}}};
+                        }
+                        return LexResult{
+                            .token{token::Identifier{.line_number = m_line_number,
+                                                     .col_number = m_col_number,
+                                                     .lexeme{std::move(m_current_lexeme)}}}};
+                    },
+
+                    [this, event](const ErrorState& state) -> LexResult {
+                        if (match_char::is_delimiter(event)) {
+                            std::println("{}", InvalidTokenError{.line_number = m_line_number,
+                                                                 .col_number = m_col_number,
+                                                                 .lexeme{std::move(m_current_lexeme)}});
+
+                            return LexResult{.token{std::nullopt}, .state{InitState{}}};
+                        }
+                        
+                        m_current_lexeme += event;
+                        m_it++;  // NOLINT
+                        return LexResult{.token{std::nullopt}, .state{ErrorState{}}};
+                    },
+
+                },
+                m_state);
+
+            m_state = result.state;
+
+            if (event == '\n') {
+                m_col_number = 1;
+                m_line_number++;
+            } else if (!m_potential_crlf) {
+                m_col_number++;
+            }
+            
+            m_potential_crlf = false;
+            if (event == '\r') {
+                m_potential_crlf = true;
+            }
+
+            return result;
+        }
+
+        // Yield the next token
+        auto parse_token() -> token::Token {
+            while (true) {
+                auto result = advance_state();
+                if (result.token) {
+                    return *result.token;
+                }
+            }
         }
 
        public:
@@ -80,7 +157,7 @@ class Lexer {
             ++(*this);
         }
 
-        /// === FORWARD_ITERATOR ===
+        // Iterator boilerplate
         using difference_type = std::ptrdiff_t;
         using value_type = token::Token;
         using reference = const token::Token&;
@@ -102,7 +179,6 @@ class Lexer {
         auto operator==(std::default_sentinel_t other) const -> bool {
             return std::holds_alternative<token::Eof>(m_tok);
         }
-        /// ==========================
     };
 
     static_assert(std::input_iterator<Iterator>);

@@ -1,23 +1,19 @@
 #pragma once
 
-#include <concepts>
 #include <cstdint>
 #include <format>
 #include <string>
-#include <type_traits>
 #include <variant>
 
 namespace token {
 
 struct Eof {};
 
-struct should_consume_tag {};
-
-// struct Identifier {
-//     uint_fast32_t line_number;
-//     uint_fast32_t col_number;
-//     std::string lexeme;
-// };
+struct Identifier {
+    uint_fast32_t line_number;
+    uint_fast32_t col_number;
+    std::string lexeme;
+};
 
 // struct Plus {
 //     uint_fast32_t line_number;
@@ -62,12 +58,12 @@ struct should_consume_tag {};
 //     uint_fast32_t col_number;
 // };
 
-struct LParen : should_consume_tag {
+struct LParen {
     uint_fast32_t line_number;
     uint_fast32_t col_number;
 };
 
-struct RParen : should_consume_tag {
+struct RParen {
     uint_fast32_t line_number;
     uint_fast32_t col_number;
 };
@@ -75,15 +71,7 @@ struct RParen : should_consume_tag {
 // using Token = std::variant<Eof, Identifier, Plus, Minus, Dot, Quote, Quasiquote, String, True,
 //                           False, LParen, RParen>;
 
-using Token = std::variant<Eof, LParen, RParen>;
-
-auto should_consume(const Token& tok) -> bool {
-    return std::visit(
-        [](const auto& tok) -> bool {
-            return std::derived_from<std::remove_cvref_t<decltype(tok)>, should_consume_tag>;
-        },
-        tok);
-}
+using Token = std::variant<Eof, LParen, RParen, Identifier>;
 
 }  // namespace token
 
@@ -94,13 +82,13 @@ struct std::formatter<token::Eof> : std::formatter<std::string> {
     }
 };
 
-// template <>
-// struct std::formatter<token::Identifier> : std::formatter<std::string> {
-//     auto format(const token::Identifier& tok, format_context& ctx) const {
-//         return formatter<string>::format(
-//             std::format("['{}', line {}]", tok.lexeme, tok.line_number), ctx);
-//     }
-// };
+template <>
+struct std::formatter<token::Identifier> : std::formatter<std::string> {
+    auto format(const token::Identifier& tok, format_context& ctx) const {
+        return formatter<string>::format(
+            std::format("['{}', line {}]", tok.lexeme, tok.line_number), ctx);
+    }
+};
 
 // template <>
 // struct std::formatter<token::Plus> : std::formatter<std::string> {
@@ -175,6 +163,9 @@ struct std::formatter<token::Token> : std::formatter<std::string> {
             }
             auto operator()(const token::RParen& tok) {
                 return std::formatter<token::RParen>{}.format(tok, ctx);
+            }
+            auto operator()(const token::Identifier& tok) {
+                return std::formatter<token::Identifier>{}.format(tok, ctx);
             }
         };
 

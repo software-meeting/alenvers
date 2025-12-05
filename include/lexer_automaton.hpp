@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <cwctype>
 #include <expected>
-#include <format>
 #include <optional>
 #include <variant>
 
@@ -38,14 +37,7 @@ using LexResult = std::expected<LexResultData, LexError>;
 
 // matching characters
 
-template <const char... match>
-auto match_char(const char c) -> bool {
-    return ((c == match) || ...);
-}
 
-auto is_delimiter(const char c) -> bool {
-    return std::iswspace(c) || match_char<'(', ')', '"', ';'>(c);
-}
 
 // FSA
 
@@ -107,25 +99,3 @@ struct TransitionTable {
 };
 }  // namespace lexer_automaton
 
-template <>
-struct std::formatter<lexer_automaton::InvalidTokenError> : std::formatter<std::string> {
-    auto format(const lexer_automaton::InvalidTokenError& err, format_context& ctx) const {
-        return formatter<string>::format(
-            std::format("Error [line: {}, column: {}]: Unknown token '{}'.", err.line_number,
-                        err.col_number, err.lexeme),
-            ctx);
-    }
-};
-
-template <>
-struct std::formatter<lexer_automaton::LexError> : std::formatter<std::string> {
-    auto format(const lexer_automaton::LexError& err, format_context& ctx) const {
-        struct Visitor {
-            format_context& ctx;  // NOLINT
-            auto operator()(const lexer_automaton::InvalidTokenError& err) {
-                return std::formatter<lexer_automaton::InvalidTokenError>{}.format(err, ctx);
-            }
-        };
-        return std::visit(Visitor{ctx}, err);
-    }
-};
